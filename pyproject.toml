@@ -10,4 +10,5 @@ dependencies = [
     "pytesseract",
     "pillow",
     "python-multipart",
+    "google-genai>=1.62.0",
 ]
