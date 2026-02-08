@@ -1,47 +1,88 @@
-from google import genai
-
-client = genai.Client()
-
-
-def build_notion_ready_prompt(ocr_text: str) -> str:
+def build_notion_ready_prompt(question: str) -> str:
     return f"""
-너는 OCR로 추출된 텍스트를
-사람이 노션에 정리하기 쉽게 다듬어주는 역할이야.
+너는 영어 학습 질문을 분류하고,
+Notion 데이터베이스에 저장하기 위한 정보를 생성하는 AI야.
 
-아래 텍스트는 이미지에서 추출된 OCR 결과라
-오타, 줄바꿈 오류, 중복, 의미 없는 문자열이 있을 수 있어.
+아래 사용자 질문을 읽고,
+이 질문이 다음 중 무엇에 해당하는지 먼저 판별해.
 
-이 텍스트를 읽고,
-노션에 바로 정리해서 쓰기 좋은 형태로 Markdown으로 정리해줘.
+1) WORD
+- 단어, 숙어, 짧은 영어 표현의 의미나 쓰임
+- 예: "in order to 뜻", "take part in 의미"
 
-요구사항:
-- 반드시 Markdown 형식으로 작성
-- 과도한 재해석이나 상상은 하지 말 것
-- 원문 내용을 최대한 보존하되, 읽기 좋게만 정리
-- 설명 문장은 쓰지 말고, 결과만 출력
+2) GRAMMAR
+- 문법 개념이나 규칙 설명
+- 예: 관사, 타동사/자동사, 시제, 분사구문
 
-구조:
-# 제목 (내용을 대표하는 한 줄)
+3) SENTENCE
+- 실생활에서 바로 쓰는 문장 표현
+- 예: "이거 얼마에요 영어로 뭐야?", "화장실 어디에요 영어로"
 
-## 요약
-- 핵심 내용 3~5줄
+그 다음, 판별 결과에 따라
+**아래 출력 형식을 정확히 지켜서** 작성해.
 
-## 정리된 내용
-- 문단 단위로 자연스럽게 정리
-- 필요하면 목록(-) 사용
-- 필요하면 테이블 사용
+━━━━━━━━━━━━━━━━━━━━
+공통 규칙
 
-OCR 원문:
-{ocr_text}
+- 출력은 반드시 JSON 하나만 반환한다
+- JSON 외의 텍스트는 절대 출력하지 않는다
+- 질문에 없는 내용을 과도하게 확장하거나 상상하지 말 것
+- 개인 영어 학습 노트로 바로 저장할 수 있는 수준으로 정리
+- 문장은 자연스럽고 명확하게 작성
+
+━━━━━━━━━━━━━━━━━━━━
+출력 형식
+
+[WORD]
+
+{{
+  "type": "WORD",
+  "database": "WORD",
+  "properties": {{
+    "영어 표현": "...",
+    "한국어 뜻": "...",
+    "영어 예문": [
+      "...",
+      "..."
+    ]
+  }},
+  "markdown": null
+}}
+
+--------------------
+
+[SENTENCE]
+
+{{
+  "type": "SENTENCE",
+  "database": "SENTENCE",
+  "properties": {{
+    "한국어 문장": "...",
+    "영어 표현": "...",
+    "사용 상황": "...",
+    "변형 예문": [
+      "...",
+      "..."
+    ]
+  }},
+  "markdown": null
+}}
+
+--------------------
+
+[GRAMMAR]
+
+{{
+  "type": "GRAMMAR",
+  "database": "GRAMMAR",
+  "properties": {{
+    "제목": "...",
+    "분류": "..."
+  }},
+  "markdown": "# 제목\\n\\n## 개념\\n...\\n\\n## 왜 중요한가\\n...\\n\\n## 핵심 규칙\\n- ...\\n- ...\\n\\n## 예문\\n- ...\\n- ...\\n\\n## 자주 하는 실수\\n- ...\\n\\n## 주의사항\\n- ..."
+}}
+
+━━━━━━━━━━━━━━━━━━━━
+사용자 질문:
+{question}
 """
-
-
-def format_ocr_text_for_notion(ocr_text: str) -> str:
-    prompt = build_notion_ready_prompt(ocr_text)
-
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-    )
-
-    return response.text
