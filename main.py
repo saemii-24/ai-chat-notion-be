@@ -1,6 +1,10 @@
 from fastapi import FastAPI
-from app.ocr.router import router as ocr_router
+from app.ask.router import router as ask_router
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 app = FastAPI()
 
-app.include_router(ocr_router, prefix="/ocr", tags=["OCR"])
+app.include_router(ask_router, prefix="/ask", tags=["Ask"])
