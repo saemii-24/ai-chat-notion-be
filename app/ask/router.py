@@ -8,9 +8,12 @@ router = APIRouter()
 
 @router.post("/ask")
 async def ask_question(payload: QuestionRequest):
-    result = ask_gemini(payload.question)
 
-    save_result_to_notion(result)
+    # 사용자가 한 번에 여러 종류의 여러 질문을 물어볼 수 있음
+    results = ask_gemini(payload.question)
+
+    for result in results:
+        save_result_to_notion(result)
 
     return {
         "question": payload.question,

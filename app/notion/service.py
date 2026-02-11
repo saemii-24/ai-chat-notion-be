@@ -28,9 +28,7 @@ def create_word_page(props: Dict[str, Any]):
             "영어 표현": {"title": [{"text": {"content": props["영어 표현"]}}]},
             "한국어 뜻": {"rich_text": [{"text": {"content": props["한국어 뜻"]}}]},
             "영어 예문": {
-                "rich_text": [
-                    {"text": {"content": e + "\n"}} for e in props["영어 예문"]
-                ]
+                "rich_text": [{"text": {"content": "\n".join(props["영어 예문"])}}]
             },
         },
     )
