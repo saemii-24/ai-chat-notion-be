@@ -2,7 +2,7 @@ import json
 import re
 from google import genai
 
-from app.llm.prompt import build_notion_ready_prompt
+from app.llm.prompt import build_notion_ready_prompt, modify_presence_markdown
 
 
 def ask_gemini(question: str) -> dict:
@@ -33,3 +33,20 @@ def ask_gemini(question: str) -> dict:
         print("🔥 Gemini raw output (NOT JSON):")
         print(raw)
         raise e
+
+
+def ask_gemini_modify(location: str) -> str:
+    client = genai.Client()
+    prompt = modify_presence_markdown(location)
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+    )
+
+    raw = response.text.strip()
+
+    if raw.startswith("```"):
+        raw = re.sub(r"^```(?:markdown)?\s*|\s*```$", "", raw, flags=re.DOTALL)
+
+    return raw

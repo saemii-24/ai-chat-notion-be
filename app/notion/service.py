@@ -178,3 +178,10 @@ def save_result_to_notion(result: Dict[str, Any]):
 
     else:
         raise ValueError(f"Unknown result type: {result_type}")
+
+
+def append_to_notion_page(page_id: str, markdown_content: str):
+    blocks = markdown_to_children(markdown_content)
+    notion = Client(auth=os.environ["NOTION_API_KEY"])
+
+    notion.blocks.children.append(block_id=page_id, children=blocks)

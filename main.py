@@ -8,3 +8,4 @@ load_dotenv()
 app = FastAPI()
 
 app.include_router(ask_router, prefix="/ask", tags=["Ask"])
+app.include_router(ask_router, prefix="/modify", tags=["Modify"])
