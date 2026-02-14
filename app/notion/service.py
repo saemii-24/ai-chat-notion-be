@@ -180,8 +180,42 @@ def save_result_to_notion(result: Dict[str, Any]):
         raise ValueError(f"Unknown result type: {result_type}")
 
 
+# =========================
+# Markdown Notion 페이지 저장
+# =========================
+
+
 def append_to_notion_page(page_id: str, markdown_content: str):
     blocks = markdown_to_children(markdown_content)
     notion = Client(auth=os.environ["NOTION_API_KEY"])
 
     notion.blocks.children.append(block_id=page_id, children=blocks)
+
+
+# =========================
+# Notion db 가져오기
+# =========================
+
+notion = Client(auth=os.environ["NOTION_API_KEY"])
+WORD_DB_ID = os.environ["WORD_DB_ID"]
+
+
+def get_all_unmemorized_words():
+    all_results = []
+    has_more = True
+    start_cursor = None
+
+    while has_more:
+        response = notion.databases.query(
+            database_id=WORD_DB_ID,
+            filter={"property": "암기상태", "status": {"equals": "학습중"}},
+            page_size=100,
+            start_cursor=start_cursor,
+        )
+
+        all_results.extend(response["results"])
+
+        has_more = response["has_more"]
+        start_cursor = response["next_cursor"]
+
+    return all_results
