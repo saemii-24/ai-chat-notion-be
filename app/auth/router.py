@@ -18,5 +18,5 @@ async def user_login(payload: UserLogin):
 
     # 2. JWT 생성
     access_token = create_access_token(data={"sub": user["username"]})
-
+    print(access_token)
     return {"access_token": access_token, "token_type": "bearer"}
