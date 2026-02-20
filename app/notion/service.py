@@ -196,14 +196,14 @@ def append_to_notion_page(page_id: str, markdown_content: str):
 # Notion db 가져오기
 # =========================
 
-notion = Client(auth=os.environ["NOTION_API_KEY"])
-WORD_DB_ID = os.environ["WORD_DB_ID"]
-
 
 def get_all_unmemorized_words():
     all_results = []
     has_more = True
     start_cursor = None
+
+    notion = Client(auth=os.environ["NOTION_API_KEY"])
+    WORD_DB_ID = os.environ["WORD_DB_ID"]
 
     while has_more:
         response = notion.databases.query(
