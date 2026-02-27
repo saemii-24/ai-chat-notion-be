@@ -4,6 +4,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta, timezone
 import os
+from passlib.context import CryptContext
 
 from sqlalchemy.orm import Session
 from app.auth.models import User
@@ -18,13 +19,34 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY is not set in environment variables")
 
+# 🔐 비밀번호 해싱 설정
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def hash_password(password: str) -> str:
+    """평문 비밀번호를 해싱 (회원가입 시 사용)"""
+    return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """평문 비밀번호와 해시값 비교 (로그인 시 사용)"""
+    return pwd_context.verify(plain_password, hashed_password)
+
 
 def authenticate_user(db: Session, username: str, password: str):
+    """
+    사용자 인증 (로그인)
+    1. DB에서 사용자 찾기
+    2. 입력한 비밀번호를 DB의 해시값과 비교
+    """
     user = db.query(User).filter(User.username == username).first()
     if not user:
         return None
-    if user.password != password:
+    
+    # ✅ 개선: 평문 비교 → 해시 검증
+    if not verify_password(password, user.password):
         return None
+    
     return user
 
 
