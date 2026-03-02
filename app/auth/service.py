@@ -9,6 +9,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from app.auth.models import User
 from app.deps import get_db
+from passlib.context import CryptContext
 
 load_dotenv()
 
@@ -23,9 +24,21 @@ if not SECRET_KEY:
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+)
+
+
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+
+
 def hash_password(password: str) -> str:
-    """평문 비밀번호를 해싱 (회원가입 시 사용)"""
     return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -42,11 +55,11 @@ def authenticate_user(db: Session, username: str, password: str):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         return None
-    
+
     # ✅ 개선: 평문 비교 → 해시 검증
     if not verify_password(password, user.password):
         return None
-    
+
     return user
 
 
