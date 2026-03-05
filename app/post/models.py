@@ -6,7 +6,7 @@ from app.db.db import Base
 class Post(Base):
     __tablename__ = "posts"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True) #id 자동증가
     title = Column(String)
     content = Column(String)
     author_id = Column(Integer, ForeignKey("users.id"))
