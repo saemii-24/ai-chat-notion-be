@@ -6,7 +6,7 @@ from app.notion.service import save_result_to_notion
 router = APIRouter()
 
 
-@router.post("/ask")
+@router.post("/")
 async def ask_question(payload: QuestionRequest):
 
     # 사용자가 한 번에 여러 종류의 여러 질문을 물어볼 수 있음
