@@ -3,20 +3,23 @@ from requests import Session
 from app import db
 from app.auth.models import User
 from app.deps import get_db
-from app.post.models import Post
+from app.post.models import Post, TopPost
 from app.post.schemas import PostCreate, PostList
-from app.auth.service import get_current_user 
+from app.auth.service import get_current_user
+from sqlalchemy import select, desc
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
+
 @router.post("/create")
 async def create_post(
-    payload: PostCreate, #프론트에서 보내는 코드
+    payload: PostCreate,  # 프론트에서 보내는 코드
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
 
-    new_post = Post( #Post 테이블을 지정해줌
+    new_post = Post(  # Post 테이블을 지정해줌
         title=payload.title,
         content=payload.content,
         author_id=current_user.id,
@@ -31,6 +34,7 @@ async def create_post(
         "post": new_post,
     }
 
+
 @router.get("/posts", response_model=list[PostList])
 async def get_posts(db: Session = Depends(get_db)):
     """
@@ -41,6 +45,7 @@ async def get_posts(db: Session = Depends(get_db)):
     """
     posts = db.query(Post).all()
     return posts
+
 
 @router.get("/posts/me", response_model=list[PostList])
 async def get_my_posts(
@@ -55,3 +60,20 @@ async def get_my_posts(
     """
     posts = db.query(Post).filter(Post.author_id == current_user.id).all()
     return posts
+
+
+@router.get("/top/latest")
+async def get_latest_top_post(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(TopPost).order_by(desc(TopPost.picked_at)).limit(1)
+    )
+    latest = result.scalar_one_or_none()
+
+    if latest is None:
+        return {"message": "No top post yet"}
+
+    return {
+        "id": latest.id,
+        "post_id": latest.post_id,
+        "picked_at": latest.picked_at,
+    }

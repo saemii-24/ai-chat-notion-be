@@ -1,14 +1,14 @@
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 from app.scheduler.jobs import pick_top_post
 
-scheduler = AsyncIOScheduler()
+scheduler = BackgroundScheduler()
 
 
 def register_jobs():
     scheduler.add_job(
         pick_top_post,
         trigger="interval",
-        minutes=1,
+        seconds=10,
         id="pick_top_post_job",
         replace_existing=True,
     )
