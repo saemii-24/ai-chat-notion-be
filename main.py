@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from dotenv import load_dotenv
 
@@ -8,15 +10,33 @@ from app.post.router import router as post_router
 
 from app.db.db import engine, Base
 from app.auth import models
+from app.post import models as post_models
+from app.scheduler.scheduler import scheduler, register_jobs
 
 load_dotenv()
 
-app = FastAPI()
 
-# DB 테이블 생성
-Base.metadata.create_all(bind=engine)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # DB table creation
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
-# 라우터 등록
+    # scheduler setup
+    register_jobs()
+    scheduler.start()
+    print("scheduler started")
+
+    yield
+
+    # shutdown
+    scheduler.shutdown()
+    print("scheduler stopped")
+
+
+app = FastAPI(lifespan=lifespan)
+
+# router registration
 app.include_router(ask_router, prefix="/ask", tags=["Ask"])
 app.include_router(modify_router, prefix="/modify", tags=["Modify"])
 app.include_router(auth_router, prefix="/auth", tags=["Auth"])
