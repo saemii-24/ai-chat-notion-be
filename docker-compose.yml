@@ -24,7 +24,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_PORT: 5432
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-  command: ["uv", "run", "python", "-m", "app.scheduler.run_scheduler"]
+    command: ["uv", "run", "python", "-m", "app.scheduler.run_scheduler"]
 
 volumes:
   postgres_data:
