@@ -14,6 +14,7 @@ services:
 
   scheduler:
     build: .
+    image: fastapi-scheduler-image
     container_name: fastapi-scheduler
     restart: always
     depends_on:
