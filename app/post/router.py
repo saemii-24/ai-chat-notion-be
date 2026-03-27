@@ -4,7 +4,7 @@ from app import db
 from app.auth.models import User
 from app.deps import get_db
 from app.post.models import Post, TopPost
-from app.post.schemas import PostCreate, PostDetail, PostList
+from app.post.schemas import PostCreate, PostList, PostDetail
 from app.auth.service import get_current_user
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -77,6 +77,7 @@ async def get_latest_top_post(db: AsyncSession = Depends(get_db)):
         "post_id": latest.post_id,
         "picked_at": latest.picked_at,
     }
+
 
 @router.get("/{post_id}", response_model=PostDetail)
 async def get_post_by_id(
