@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from requests import Session
 from app import db
 from app.auth.models import User
 from app.deps import get_db
 from app.post.models import Post, TopPost
-from app.post.schemas import PostCreate, PostList
+from app.post.schemas import PostCreate, PostDetail, PostList
 from app.auth.service import get_current_user
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -77,3 +77,18 @@ async def get_latest_top_post(db: AsyncSession = Depends(get_db)):
         "post_id": latest.post_id,
         "picked_at": latest.picked_at,
     }
+
+@router.get("/{post_id}", response_model=PostDetail)
+async def get_post_by_id(
+    post_id: int,
+    db: Session = Depends(get_db),
+):
+    """
+    id 값으로 게시글을 상세 조회한다.
+    """
+    post = db.query(Post).filter(Post.id == post_id).first()
+
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    return post
