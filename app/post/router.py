@@ -6,7 +6,7 @@ from app.deps import get_db
 from app.post.models import Post, TopPost
 from app.post.schemas import PostCreate, PostList, PostDetail
 from app.auth.service import get_current_user
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
@@ -93,3 +93,26 @@ async def get_post_by_id(
         raise HTTPException(status_code=404, detail="Post not found")
 
     return post
+
+
+@router.post("/{post_id}/like")
+def like_post(post_id: int, db: Session = Depends(get_db)):
+    result = db.execute(
+        update(Post)
+        .where(Post.id == post_id)
+        .values(like_count=Post.like_count + 1)
+        .returning(Post.id, Post.like_count)
+    )
+
+    row = result.first()
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    db.commit()
+
+    return {
+        "message": "Post liked",
+        "post_id": row.id,
+        "like_count": row.like_count,
+    }
