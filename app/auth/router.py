@@ -36,15 +36,17 @@ async def register_user(user_data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-async def user_login(user_data: UserLogin, db: Session = Depends(get_db)):
+async def user_login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
     """
     로그인 엔드포인트
     1. 사용자 입력 받기 (평문 비밀번호)
     2. DB에서 해시값 가져오기
     3. verify()로 비교 (평문 vs 해시값)
     """
-    # 🔐 authenticate_user 내부에서 verify_password() 실행됨
-    user = authenticate_user(db, user_data.username, user_data.password)
+    user = authenticate_user(db, form_data.username, form_data.password)
 
     if not user:
         raise HTTPException(

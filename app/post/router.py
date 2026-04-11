@@ -1,33 +1,78 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, Form, UploadFile
 from requests import Session
 from app import db
 from app.auth.models import User
 from app.deps import get_db
 from app.post.models import Post, TopPost
-from app.post.schemas import PostCreate, PostList, PostDetail
+from app.post.schemas import PostCreate, PostList, PostDetail, PostResponse
 from app.auth.service import get_current_user
 from sqlalchemy import select, desc, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
+from minio import Minio
+import os
+from uuid import uuid4
 
 router = APIRouter()
+
+minio_client = Minio(
+    "localhost:9000",
+    access_key=os.getenv("MINIO_ROOT_USER"),
+    secret_key=os.getenv("MINIO_ROOT_PASSWORD"),
+    secure=False,
+)
+
+BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")
+
+
+def get_extension(filename: str | None) -> str:
+    if not filename or "." not in filename:
+        return "bin"
+    return filename.rsplit(".", 1)[1].lower()
 
 
 @router.post("/create")
 async def create_post(
-    payload: PostCreate,  # 프론트에서 보내는 코드
+    title: str = Form(...),
+    content: str = Form(...),
+    image: UploadFile | None = File(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
-
-    new_post = Post(  # Post 테이블을 지정해줌
-        title=payload.title,
-        content=payload.content,
+    new_post = Post(
+        title=title,
+        content=content,
         author_id=current_user.id,
     )
 
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
+
+    if image:
+        ext = get_extension(image.filename)
+        object_name = f"posts/{new_post.id}/background/{uuid4()}.{ext}"
+
+        image.file.seek(0, 2)
+        file_size = image.file.tell()
+        image.file.seek(0)
+
+        try:
+            minio_client.put_object(
+                BUCKET_NAME,
+                object_name,
+                image.file,
+                length=file_size,
+                content_type=image.content_type or "application/octet-stream",
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"MinIO upload failed: {str(e)}"
+            )
+
+        new_post.background_image_key = object_name
+        db.commit()
+        db.refresh(new_post)
 
     return {
         "message": "Post created successfully",
