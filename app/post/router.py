@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, File, Form, UploadFile
 from requests import Session
 from app import db
@@ -22,8 +24,6 @@ minio_client = Minio(
     secure=False,
 )
 
-BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")
-
 
 def get_extension(filename: str | None) -> str:
     if not filename or "." not in filename:
@@ -35,10 +35,12 @@ def get_extension(filename: str | None) -> str:
 async def create_post(
     title: str = Form(...),
     content: str = Form(...),
-    image: UploadFile | None = File(None),
     db: Session = Depends(get_db),
+    image: UploadFile | None = File(None),
     current_user=Depends(get_current_user),
 ):
+    BUCKET_NAME = os.getenv("MINIO_BUCKET_NAME")
+
     new_post = Post(
         title=title,
         content=content,
@@ -59,6 +61,11 @@ async def create_post(
 
         try:
             minio_client.put_object(
+                # 1. 어느 버킷에 저장?
+                # 2. 버킷 내에서 어떤 경로로 저장?
+                # 3. 업로드할 파일 객체
+                # 4. 파일 크기
+                # 5. (선택) 콘텐츠 타입
                 BUCKET_NAME,
                 object_name,
                 image.file,
@@ -74,9 +81,24 @@ async def create_post(
         db.commit()
         db.refresh(new_post)
 
+    background_image_url = None
+    if new_post.background_image_key:
+        background_image_url = minio_client.presigned_get_object(
+            BUCKET_NAME,
+            new_post.background_image_key,
+            expires=timedelta(hours=1),
+        )
+
     return {
         "message": "Post created successfully",
-        "post": new_post,
+        "post": {
+            "id": new_post.id,
+            "title": new_post.title,
+            "content": new_post.content,
+            "author_id": new_post.author_id,
+            "like_count": new_post.like_count,
+            "background_image_url": background_image_url,
+        },
     }
 
 

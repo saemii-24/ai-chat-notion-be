@@ -13,6 +13,7 @@ class Post(Base):
     content = Column(String, nullable=False)
     author_id = Column(Integer, ForeignKey("users.id"))
     like_count = Column(Integer, default=0, nullable=False)
+    background_image_key = Column(String, nullable=True)
 
     author = relationship("User")
     top_post_records = relationship("TopPost", back_populates="post")
